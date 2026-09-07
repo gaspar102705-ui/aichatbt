@@ -1,8 +1,13 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
   
-  const conversation = req.body.messages; // Now receiving the full chat history
+  const conversation = req.body.messages;
   const apiKey = process.env.GROQ_API_KEY; 
+
+  // 1. Check if Vercel loaded the API key
+  if (!apiKey) {
+    return res.status(200).json({ reply: "ERROR: The GROQ_API_KEY is missing from Vercel." });
+  }
 
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -13,17 +18,23 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'llama3-8b-8192', 
-        messages: conversation // Passing the full history to the AI
+        messages: conversation
       })
     });
     
     const data = await groqRes.json();
     
-    if (data.error) throw new Error(data.error.message);
+    // 2. Check if Groq rejected the key or payload
+    if (!groqRes.ok) {
+      return res.status(200).json({ reply: `GROQ API ERROR: ${data.error?.message || 'Unknown error'}` });
+    }
     
+    // 3. Success
     const reply = data.choices[0].message.content;
     res.status(200).json({ reply });
+
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch AI response' });
+    // 4. Check for code syntax crashes
+    res.status(200).json({ reply: `SERVER ERROR: ${error.message}` });
   }
 }
