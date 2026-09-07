@@ -3,7 +3,10 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My AI Chatbot</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 1. Tailwind with Typography plugin for beautiful text formatting -->
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <!-- 2. Marked.js to translate AI Markdown into HTML -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen flex flex-col font-sans">
   <header class="bg-black p-4 shadow-md text-center font-bold text-xl text-white">AI Assistant</header>
@@ -20,7 +23,6 @@
   </footer>
 
   <script>
-    // This array acts as the AI's memory
     let chatHistory = [
       { role: "system", content: "You are a helpful, smart AI assistant." }
     ];
@@ -31,28 +33,25 @@
       const msg = input.value.trim();
       if (!msg) return;
 
-      // Add user message to memory array
       chatHistory.push({ role: "user", content: msg });
       
-      // Update UI
       box.innerHTML += `<div class="text-right"><span class="bg-gradient-to-r from-red-800 to-red-900 px-4 py-2 rounded-lg inline-block text-white">${msg}</span></div>`;
       input.value = '';
       box.scrollTop = box.scrollHeight;
 
       try {
-        // Send the ENTIRE memory array to the backend
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: chatHistory }) // Changed from 'message' to 'messages'
+          body: JSON.stringify({ messages: chatHistory })
         });
         const data = await res.json();
         
-        // Save the AI's reply to the memory array
         chatHistory.push({ role: "assistant", content: data.reply });
 
-        // Update UI
-        box.innerHTML += `<div class="text-left"><span class="bg-gray-800 px-4 py-2 rounded-lg inline-block">${data.reply}</span></div>`;
+        // 3. Parse the Markdown and apply Tailwind 'prose' classes
+        const formattedReply = marked.parse(data.reply || "");
+        box.innerHTML += `<div class="text-left"><div class="bg-gray-800 px-4 py-4 rounded-lg inline-block prose prose-invert max-w-none">${formattedReply}</div></div>`;
         box.scrollTop = box.scrollHeight;
       } catch (e) {
         box.innerHTML += `<div class="text-left text-red-500">Error connecting to AI.</div>`;
