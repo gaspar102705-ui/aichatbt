@@ -9,7 +9,7 @@
   <header class="bg-black p-4 shadow-md text-center font-bold text-xl text-white">AI Assistant</header>
   
   <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 max-w-3xl mx-auto w-full">
-    <div class="text-left"><span class="bg-gray-800 px-4 py-2 rounded-lg inline-block">Hello! How can I help you today?</span></div>
+    <div class="text-left"><span class="bg-gray-800 px-4 py-2 rounded-lg inline-block">Hello! I am ready to learn.</span></div>
   </main>
 
   <footer class="bg-black p-4 sticky bottom-0">
@@ -20,27 +20,38 @@
   </footer>
 
   <script>
+    // This array acts as the AI's memory
+    let chatHistory = [
+      { role: "system", content: "You are a helpful, smart AI assistant." }
+    ];
+
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const box = document.getElementById('chat-box');
       const msg = input.value.trim();
       if (!msg) return;
 
-      // Display user message
+      // Add user message to memory array
+      chatHistory.push({ role: "user", content: msg });
+      
+      // Update UI
       box.innerHTML += `<div class="text-right"><span class="bg-gradient-to-r from-red-800 to-red-900 px-4 py-2 rounded-lg inline-block text-white">${msg}</span></div>`;
       input.value = '';
       box.scrollTop = box.scrollHeight;
 
       try {
-        // Send to your backend
+        // Send the ENTIRE memory array to the backend
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg })
+          body: JSON.stringify({ messages: chatHistory }) // Changed from 'message' to 'messages'
         });
         const data = await res.json();
         
-        // Display AI response
+        // Save the AI's reply to the memory array
+        chatHistory.push({ role: "assistant", content: data.reply });
+
+        // Update UI
         box.innerHTML += `<div class="text-left"><span class="bg-gray-800 px-4 py-2 rounded-lg inline-block">${data.reply}</span></div>`;
         box.scrollTop = box.scrollHeight;
       } catch (e) {

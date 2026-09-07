@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
   
-  const userMessage = req.body.message;
-  const apiKey = process.env.GROQ_API_KEY; // Pulled securely from Vercel
+  const conversation = req.body.messages; // Now receiving the full chat history
+  const apiKey = process.env.GROQ_API_KEY; 
 
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -12,12 +12,15 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3-8b-8192', // Fast, free Llama 3 model
-        messages: [{ role: 'user', content: userMessage }]
+        model: 'llama3-8b-8192', 
+        messages: conversation // Passing the full history to the AI
       })
     });
     
     const data = await groqRes.json();
+    
+    if (data.error) throw new Error(data.error.message);
+    
     const reply = data.choices[0].message.content;
     res.status(200).json({ reply });
   } catch (error) {
